@@ -4,31 +4,9 @@ import time
 import serial
 import logging
 from pathlib import Path
+from utils import wait_for_prompt_match, PROMPT_BOLT
 
-
-PROMPT_BOLT = "BOLT> "
 MAX_RAM_USABLE = 0x6000000
-
-
-def wait_for_prompt_match(ser, prompt_regex, timeout=60):
-    buffer = ""
-    start = time.time()
-    while time.time() - start < timeout:
-        # There might be weird things happening over serial
-        # (eg. the AP resets before everything is transmitted).
-        # Therefore, we have to ignore decoding errors here.
-        bytes_to_read = 1 if ser.inWaiting() == 0 else ser.inWaiting()
-        new_read = ser.read(bytes_to_read).decode("utf-8", errors="ignore")
-        print(new_read, end="")
-        sys.stdout.flush()
-
-        buffer += new_read
-
-        match = re.search(prompt_regex, buffer)
-        if match:
-            return match.group(0)
-
-    raise Exception(f"Timeout waiting for prompt: '{prompt_regex}'")
 
 
 def load_partitions():
