@@ -31,3 +31,29 @@ def wait_for_prompt_match(ser, prompt_regex, timeout=60):
             return match.group(0)
 
     raise Exception(f"Timeout waiting for prompt: '{prompt_regex}'")
+
+
+def init_and_configure_ip(ser):
+    ser.write(b"\n")
+    wait_for_prompt_match(ser, PROMPT_BOLT)
+    ser.write(b"ifconfig eth0 -addr=192.168.1.1 -mask=255.255.255.0\n")
+    wait_for_prompt_match(ser, PROMPT_BOLT)
+
+
+def load_partitions():
+    with open("partitions.txt", "r") as f:
+        lines = f.readlines()
+
+    for line in lines:
+        line = line.strip()
+        part_name = line.split()[0]
+
+        # regex to match eg. "emmcflash0.rwfs  EMMC flash Data : 0x036100000-0x05E100000 (640MB)" and extract start and end address
+        part_regex = f"{part_name}.*: 0x([0-9A-F]+)-0x([0-9A-F]+)"
+        part_match = re.search(part_regex, line)
+
+        start = int(part_match.group(1), 16)
+        end = int(part_match.group(2), 16)
+        size = end - start
+
+        yield part_name, start, end, size
